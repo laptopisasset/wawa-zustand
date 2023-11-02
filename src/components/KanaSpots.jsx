@@ -4,10 +4,11 @@ import { CylinderCollider, RigidBody } from "@react-three/rapier";
 import { Center, Cylinder, Text3D } from "@react-three/drei";
 
 export const Kanaspots = () => {
-  const { level, currentKana, currentStage } = useGameStore((state) => ({
+  const { level, kanaTouched, currentStage, mode } = useGameStore((state) => ({
     level: state.level,
-    currentKana: state.currentKana,
+    kanaTouched: state.kanaTouched,
     currentStage: state.currentStage,
+    mode: state.mode,
   }));
 
   if (!level) {
@@ -16,11 +17,17 @@ export const Kanaspots = () => {
 
   return level[currentStage].map((kana, index) => (
     <group
-      key={kana.name}
+      key={`${currentStage}-${kana.name}`}
       rotation-y={(index / level[currentStage].length) * Math.PI * 2}
     >
       <group position-x={3.5} position-z={-3.5}>
-        <RigidBody colliders={false} type="fixed">
+        <RigidBody
+          colliders={false}
+          type="fixed"
+          onCollisionEnter={() => {
+            kanaTouched(kana);
+          }}
+        >
           <CylinderCollider args={[0.25 / 2, 1]} />
           <Cylinder scale={[1, 0.25, 1]}>
             <meshStandardMaterial color="white" />
@@ -33,7 +40,7 @@ export const Kanaspots = () => {
             size={0.82}
             rotation-y={-(index / level[currentStage].length) * Math.PI * 2}
           >
-            {kana.character.hiragana}
+            {kana.character[mode]}
             <meshNormalMaterial />
           </Text3D>
         </Center>

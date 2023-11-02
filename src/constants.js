@@ -1,3 +1,9 @@
+export const gameStates = {
+  MENU: "MENU",
+  GAME: "GAME",
+  GAME_OVER: "GAME_OVER",
+};
+
 export const kanas = [
   {
     name: "a",
@@ -170,7 +176,7 @@ export const kanas = [
     combination: false,
   },
   {
-    name: "yi",
+    name: "i",
     character: {
       hiragana: "い",
       katakana: "イ",

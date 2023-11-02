@@ -1,9 +1,12 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Character } from "./Character";
-import { CapsuleCollider, RigidBody } from "@react-three/rapier";
+import { CapsuleCollider, RigidBody, vec3 } from "@react-three/rapier";
 import { useKeyboardControls } from "@react-three/drei";
 import { Controls } from "../constants";
 import { useFrame } from "@react-three/fiber";
+import { playAudio, useGameStore } from "../store";
+
+import * as THREE from "three";
 
 const JUMP_FORCE = 0.5;
 const MOVEMENT_SPEED = 0.1;
@@ -22,7 +25,26 @@ export const CharacterController = () => {
   const character = useRef();
   const isOnFloor = useRef(true);
 
-  useFrame(() => {
+  const resetPosition = () => {
+    rigidbody.current.setTranslation(vec3({ x: 0, y: 0, z: 0 }));
+    rigidbody.current.setLinvel(vec3({ x: 0, y: 0, z: 0 }));
+  };
+
+  useEffect(
+    () => useGameStore.subscribe((state) => state.currentStage, resetPosition),
+    []
+  );
+
+  useEffect(() => {
+    const subscribed = useGameStore.subscribe(
+      (state) => state.wrongAnswers,
+      resetPosition
+    );
+    return subscribed;
+  }, []);
+
+  // GAME LOOP
+  useFrame((state) => {
     const impulse = { x: 0, y: 0, z: 0 };
 
     if (jumpPressed && isOnFloor.current) {
@@ -58,7 +80,23 @@ export const CharacterController = () => {
       const angle = Math.atan2(linvel.x, linvel.z);
       character.current.rotation.y = angle;
     }
+
+    // CAMERA FOLLOW
+    const characterWorldPosition = character.current.getWorldPosition(
+      new THREE.Vector3()
+    );
+    state.camera.position.x = characterWorldPosition.x;
+    state.camera.position.z = characterWorldPosition.z + 14;
+
+    const targetLookAt = new THREE.Vector3(
+      characterWorldPosition.x,
+      0,
+      characterWorldPosition.z
+    );
+
+    state.camera.lookAt(targetLookAt);
   });
+
   return (
     <group>
       <RigidBody
@@ -68,6 +106,14 @@ export const CharacterController = () => {
         ref={rigidbody}
         onCollisionEnter={() => {
           isOnFloor.current = true;
+        }}
+        onIntersectionEnter={({ other }) => {
+          if (other.rigidBodyObject.name === "void") {
+            resetPosition();
+            playAudio("fall", () => {
+              playAudio("ganbatte");
+            });
+          }
         }}
       >
         <CapsuleCollider args={[0.8, 0.4]} position={[0, 1.2, 0]} />

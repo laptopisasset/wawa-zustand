@@ -1,40 +1,100 @@
 import { create } from "zustand";
-import { kanas } from "./constants";
+import { gameStates, kanas } from "./constants";
+import { subscribeWithSelector } from "zustand/middleware";
 
-export const generateGameLevel = ({nbStages}) => {
-    const level = [];
+export const playAudio = (path, callback) => {
+  const audio = new Audio(`sounds/${path}.mp3`);
+  if (callback) {
+    audio.addEventListener("ended", callback);
+  }
+  audio.play();
+};
 
-    for(let i = 0; i < nbStages; i++) {
-        const stage = [];
-        const nbOptions = 3 + 1;
-        for(let j = 0; j < nbOptions; j++) {
-            let kana = null;
-            while(!kana || stage.includes(kana)) {
-                kana = kanas[Math.floor(Math.random() * kanas.length)]
-            }
-            stage.push(kana);
-        }
-        stage[Math.floor(Math.random() * stage.length)].correct = true;
-        level.push(stage);
+export const generateGameLevel = ({ nbStages }) => {
+  const level = [];
+  const goodKanas = [];
+
+  for (let i = 0; i < nbStages; i++) {
+    const stage = [];
+    const nbOptions = 3 + i;
+    for (let j = 0; j < nbOptions; j++) {
+      let kana = null;
+      while (!kana || stage.includes(kana) || goodKanas.includes(kana)) {
+        kana = kanas[Math.floor(Math.random() * kanas.length)];
+      }
+      stage.push(kana);
     }
-    return level;
-}
+    const goodKana = stage[Math.floor(Math.random() * stage.length)];
+    goodKana.correct = true;
+    goodKanas.push(goodKana);
+    level.push(stage);
+  }
+  return level;
+};
 
-export const useGameStore = create((set) => ({
+export const useGameStore = create(
+  subscribeWithSelector((set, get) => ({
     level: null,
     currentStage: 0,
     currentKana: null,
     mode: "hiragana",
-    startGame: () => {
-        const level = generateGameLevel({nbStages: 5});
-        const currentKana = level[0].find((kana) => kana.correct);
-        set({ level, currentStage: 0, currentKana})
+    gameState: gameStates.MENU,
+    wrongAnswers: 0,
+    startGame: ({ mode }) => {
+      const level = generateGameLevel({ nbStages: 5 });
+      const currentKana = level[0].find((kana) => kana.correct);
+      playAudio("start", () => {
+        playAudio(`kanas/${currentKana.name}`);
+      });
+      set({
+        level,
+        currentStage: 0,
+        currentKana,
+        gameState: gameStates.GAME,
+        mode,
+        wrongAnswers: 0,
+      });
     },
     nextStage: () => {
-        set((state) => {
-            const currentStage = state.currentStage + 1;
-            const currentKana = state.level[currentStage].find((kana) => kana.correct);
-            return { currentKana, currentStage };
-        })
-    }
-}))
+      set((state) => {
+        if (state.currentStage + 1 === state.level.length) {
+          playAudio("congratulations");
+          return {
+            currentStage: 0,
+            currentKana: null,
+            level: null,
+            gameState: gameStates.GAME_OVER,
+          };
+        }
+        const currentStage = state.currentStage + 1;
+        const currentKana = state.level[currentStage].find(
+          (kana) => kana.correct
+        );
+        playAudio("good");
+        playAudio(`correct${currentStage % 3}`, () => {
+          playAudio(`kanas/${currentKana.name}`);
+        });
+        return { currentKana, currentStage };
+      });
+    },
+    goToMenu: () => {
+      set({
+        gameState: gameStates.MENU,
+      });
+    },
+    kanaTouched: (kana) => {
+      const currentKana = get().currentKana;
+      if (currentKana.name === kana.name) {
+        get().nextStage();
+      } else {
+        playAudio("wrong");
+        playAudio(`kanas/${kana.name}`, () => {
+          playAudio("fail");
+        });
+        set((state) => ({
+          wrongAnswers: state.wrongAnswers + 1,
+        }));
+      }
+    },
+  }))
+);
