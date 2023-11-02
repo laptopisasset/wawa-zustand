@@ -6,6 +6,7 @@ import { Physics } from "@react-three/rapier";
 import { KeyboardControls } from "@react-three/drei";
 import { useMemo } from "react";
 import { Controls } from "./constants";
+import { Menu } from "./components/Menu";
 
 function App() {
   const map = useMemo(
@@ -30,6 +31,7 @@ function App() {
           </Physics>
         </Suspense>
       </Canvas>
+      <Menu />
     </KeyboardControls>
   );
 }
