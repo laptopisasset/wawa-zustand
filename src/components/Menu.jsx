@@ -1,5 +1,5 @@
-import React from "react";
 import { useGameStore } from "../store";
+
 import { gameStates } from "../constants";
 
 export const Menu = () => {
@@ -8,7 +8,6 @@ export const Menu = () => {
     gameState: state.gameState,
     goToMenu: state.goToMenu,
   }));
-
   return (
     <>
       <div
@@ -16,19 +15,34 @@ export const Menu = () => {
           gameState !== gameStates.MENU ? "menu--hidden" : ""
         }`}
       >
-        <h1>Kana game</h1>
+        <div>
+          <h1>Kana Game</h1>
+          <p>What do you want to practice today?</p>
+        </div>
         <button
           disabled={gameState !== gameStates.MENU}
           onClick={() => startGame({ mode: "hiragana" })}
         >
-          Start hiragana game
+          Hiragana
         </button>
         <button
           disabled={gameState !== gameStates.MENU}
           onClick={() => startGame({ mode: "katakana" })}
         >
-          Start katakana game
+          Katakana
         </button>
+        <div>
+          <p>
+            Made with 💙 by{" "}
+            <a href="https://youtube.com/@WawaSensei" target="_blank">
+              Wawa Sensei
+            </a>
+            , 3D models from{" "}
+            <a href="https://instagram.com/belyakova.dsn" target="_blank">
+              Camilla
+            </a>
+          </p>
+        </div>
       </div>
       <div
         className={`scores ${

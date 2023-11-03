@@ -3,12 +3,19 @@ import "./App.css";
 import { Experience } from "./components/Experience";
 import { Suspense } from "react";
 import { Physics } from "@react-three/rapier";
-import { KeyboardControls } from "@react-three/drei";
+import {
+  KeyboardControls,
+  Loader,
+  useFont,
+  useProgress,
+} from "@react-three/drei";
 import { useMemo } from "react";
 import { Controls } from "./constants";
 import { Menu } from "./components/Menu";
+import { Leva } from "leva";
 
 function App() {
+  useFont.preload("./fonts/Noto Sans JP ExtraBold_Regular.json");
   const map = useMemo(
     () => [
       { name: Controls.forward, keys: ["ArrowUp", "KeyW"] },
@@ -20,17 +27,20 @@ function App() {
     []
   );
 
+  const { progress } = useProgress();
   return (
     <KeyboardControls map={map}>
-      <Canvas camera={{ position: [0, 6, 14], fov: 42 }}>
-        <color attach="background" args={["#dbecfb"]} />
-        <fog attach="fog" args={["#dbecfb", 30, 40]} />
+      <Leva hidden />
+      <Canvas shadows camera={{ position: [0, 20, 14], fov: 42 }}>
+        <color attach="background" args={["#e3daf7"]} />
         <Suspense>
-          <Physics debug>
+          <Physics>
             <Experience />
           </Physics>
         </Suspense>
       </Canvas>
+      <Loader />
+      {progress === 100 && <Menu />}
       <Menu />
     </KeyboardControls>
   );
